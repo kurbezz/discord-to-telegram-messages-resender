@@ -1,0 +1,29 @@
+use once_cell::sync::Lazy;
+
+
+fn get_env(env: &'static str) -> String {
+    std::env::var(env).unwrap_or_else(|_| panic!("Cannot get the {} env variable", env))
+}
+
+
+pub struct Config {
+    pub discord_bot_token: String,
+    pub discord_channel_id: u64,
+    pub telegram_bot_token: String,
+    pub telgram_channel_id: i128,
+}
+
+
+impl Config {
+    pub fn load() -> Config {
+        Config {
+            discord_bot_token: get_env("DISCORD_BOT_TOKEN"),
+            discord_channel_id: get_env("DISCORD_CHANNEL_ID").parse().unwrap(),
+            telegram_bot_token: get_env("TELEGRAM_BOT_TOKEN"),
+            telgram_channel_id: get_env("TELEGRAM_CHANNEL_ID").parse().unwrap(),
+        }
+    }
+}
+
+
+pub static CONFIG: Lazy<Config> = Lazy::new(Config::load);
