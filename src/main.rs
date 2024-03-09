@@ -1,3 +1,4 @@
+use serenity::all::ActivityData;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -38,7 +39,12 @@ async fn main() {
         | GatewayIntents::MESSAGE_CONTENT;
 
     let mut client =
-        Client::builder(&config::CONFIG.discord_bot_token, intents).event_handler(Handler).await.expect("Err creating client");
+        Client::builder(&config::CONFIG.discord_bot_token, intents)
+            .event_handler(Handler)
+            .status(serenity::all::OnlineStatus::Online)
+            .activity(ActivityData::playing(&config::CONFIG.discord_bot_activity))
+            .await
+            .expect("Err creating client");
 
     if let Err(why) = client.start().await {
         println!("Client error: {why:?}");
