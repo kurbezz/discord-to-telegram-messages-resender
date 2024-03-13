@@ -1,3 +1,4 @@
+use reqwest::Url;
 use serenity::all::ActivityData;
 use serenity::async_trait;
 use serenity::model::channel::Message;
@@ -7,14 +8,17 @@ pub mod config;
 
 
 async fn send_to_telegram(msg: &str) {
-    let url = format!(
-        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-        config::CONFIG.telegram_bot_token,
-        config::CONFIG.telgram_channel_id,
-        msg
-    );
+    let base_url = format!("https://api.telegram.org/bot{}/sendMessage", config::CONFIG.telegram_bot_token);
 
-    reqwest::get(&url).await.expect("Error sending message to Telegram");
+    let url = Url::parse_with_params(
+        base_url.as_ref(),
+        &[
+            ("chat_id", &config::CONFIG.telgram_channel_id.to_string().as_ref()),
+            ("text", &msg)
+        ]
+    ).unwrap();
+
+    reqwest::get(url).await.expect("Error sending message to Telegram");
 }
 
 
