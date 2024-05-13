@@ -26,4 +26,10 @@ pub fn register() -> CreateCommand {
             )
             .required(true)
         )
+        .add_option(
+            CreateCommandOption::new(
+                CommandOptionType::String, "date", "Дата заказа"
+            )
+            .required(false)
+        )
 }

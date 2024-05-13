@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, CreateMessage, GuildId};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -28,9 +28,17 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, _ctx: Context, msg: Message) {
+        if msg.guild_id != Some(config::CONFIG.discord_guild_id.into()) {
+            return;
+        }
+
         if msg.channel_id == config::CONFIG.discord_channel_id {
             send_to_telegram(&msg.content).await;
             return;
+        }
+
+        if msg.content == "/create_message" {
+            let _ = msg.channel_id.send_message(&_ctx.http, CreateMessage::new().content("#Init")).await;
         }
 
         println!("{}: {}", msg.author.name, msg.content);
@@ -44,7 +52,8 @@ impl EventHandler for Handler {
                 &ctx.http,
                 vec![
                     commands::add_game::register(),
-                    // commands::delete_game::register(),
+                    commands::delete_game::register(),
+                    commands::create_message::register()
                 ]
             ).await.unwrap();
     }
