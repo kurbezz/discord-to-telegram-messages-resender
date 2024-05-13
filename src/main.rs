@@ -1,11 +1,14 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, CommandDataOption, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
+use utils::{add_game, delete_game, format_games_list, parse_games_list};
+use chrono::offset::FixedOffset;
 
 pub mod config;
 pub mod commands;
+pub mod utils;
 
 
 async fn send_to_telegram(msg: &str) {
@@ -29,6 +32,10 @@ struct Handler;
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
+            if command.channel_id != config::CONFIG.discord_channel_id {
+                return;
+            }
+
             match command.data.name.as_str() {
                 "copy_message" => {
                     let message_id = command.data.options[0].value.as_str().unwrap().parse::<u64>().unwrap();
@@ -41,7 +48,30 @@ impl EventHandler for Handler {
                     }
                 },
                 "add_game" => {
-                    // let message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+                    let mut message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+
+                    let utc_offset = FixedOffset::east_opt(3 * 3600); // UTC+3 offset in seconds
+                    let current_time = chrono::Local::now().with_timezone(&utc_offset.unwrap());
+
+                    let mut categories = parse_games_list(&message.content).await;
+
+                    categories = add_game(
+                        categories,
+                        command.data.options[0].value.as_str().unwrap(),
+                        &format!(
+                            "* {} ({}) | {}",
+                            command.data.options[2].value.as_str().unwrap(),
+                            command.data.options[1].value.as_str().unwrap(),
+                            match command.data.options.get(3) {
+                                Some(v) => v.value.as_str().unwrap().to_string(),
+                                None => format!("{}", current_time.format("%d.%m.%Y")),
+                            },
+                        )
+                    ).await;
+
+                    let new_content = format_games_list(categories).await;
+
+                    message.edit(&ctx.http, EditMessage::new().content(new_content)).await.unwrap();
 
                     let data = CreateInteractionResponseMessage::new().content("Игра добавлена!").ephemeral(true);
                     let builder = CreateInteractionResponse::Message(data);
@@ -50,7 +80,18 @@ impl EventHandler for Handler {
                     }
                 },
                 "delete_game" => {
-                    // let message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+                    let mut message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+
+                    let mut categories = parse_games_list(&message.content).await;
+
+                    categories = delete_game(
+                        categories,
+                        command.data.options[0].value.as_str().unwrap()
+                    ).await;
+
+                    let new_content = format_games_list(categories).await;
+
+                    message.edit(&ctx.http, EditMessage::new().content(new_content)).await.unwrap();
 
                     let data = CreateInteractionResponseMessage::new().content("Игра удалена!").ephemeral(true);
                     let builder = CreateInteractionResponse::Message(data);
