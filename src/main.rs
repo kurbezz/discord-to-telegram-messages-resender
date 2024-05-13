@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, AutocompleteChoice, CommandOptionType, CreateAutocompleteResponse, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -102,38 +102,28 @@ impl EventHandler for Handler {
                 _ => (),
             };
         } else if let Interaction::Autocomplete(interaction) = interaction {
+            if interaction.channel_id != config::CONFIG.discord_game_list_channel_id {
+                return;
+            }
+
             println!("Received autocomplete interaction: {interaction:#?}");
 
-            // let mut message = interaction.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
-            // let mut categories = parse_games_list(&message.content).await;
+            match interaction.data.name.as_str() {
+                "game" => {
+                    let message = interaction.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+                    let categories = parse_games_list(&message.content).await;
+                    let games = categories.iter().flat_map(|category| category.games.iter()).collect::<Vec<&String>>();
 
-            // let content = match interaction.data.name.as_str() {
-            //     "game" => {
-            //         let games = vec!["Dota 2", "CS:GO", "PUBG"];
-            //         let options = games.iter().map(|game| {
-            //             CreateCommandOptionChoice::new(game, game)
-            //         }).collect();
+                    let autocompolete_response = CreateAutocompleteResponse::new().set_choices(
+                        games.iter().map(|game| {
+                            AutocompleteChoice::new(game.to_string(), game.to_string())
+                        }).collect()
+                    );
 
-            //         let data = CreateInteractionResponseMessage::new().content("Выберите игру").add_option(
-            //             CreateCommandOption::new(
-            //                 CommandOptionType::String, "game", "Игра"
-            //             )
-            //             .required(true)
-            //             .set_autocomplete(true)
-            //             .add_choices(options)
-            //         );
-
-            //         Some(data)
-            //     },
-            //     _ => None,
-            // };
-
-            // if let Some(content) = content {
-            //     let builder = CreateInteractionResponse::Message(content);
-            //     if let Err(why) = interaction.create_response(&ctx.http, builder).await {
-            //         println!("Cannot respond to autocomplete command: {why}");
-            //     }
-            // }
+                    let _ = interaction.create_response(&ctx.http, serenity::builder::CreateInteractionResponse::Autocomplete(autocompolete_response)).await.unwrap();
+                },
+                _ => (),
+            };
         }
     }
 
