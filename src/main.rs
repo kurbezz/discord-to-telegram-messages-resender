@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, AutocompleteChoice, CommandOptionType, CreateAutocompleteResponse, CreateCommandOption, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, AutocompleteChoice, CreateAutocompleteResponse, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -37,16 +37,6 @@ impl EventHandler for Handler {
             }
 
             match command.data.name.as_str() {
-                "copy_message" => {
-                    let message_id = command.data.options[0].value.as_str().unwrap().parse::<u64>().unwrap();
-                    let message = command.channel_id.message(&ctx.http, message_id).await.unwrap();
-
-                    let data = CreateInteractionResponseMessage::new().content(message.content);
-                    let builder = CreateInteractionResponse::Message(data);
-                    if let Err(why) = command.create_response(&ctx.http, builder).await {
-                        println!("Cannot respond to slash command: {why}");
-                    }
-                },
                 "add" => {
                     let mut message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
 
@@ -106,23 +96,23 @@ impl EventHandler for Handler {
                 return;
             }
 
-            println!("Received autocomplete interaction: {interaction:#?}");
+            if interaction.data.name.as_str() == "delete" {
+                let message = interaction.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+                let categories = parse_games_list(&message.content).await;
+                let games = categories.iter().flat_map(|category| category.games.iter()).collect::<Vec<&String>>();
 
-            match interaction.data.name.as_str() {
-                "game" => {
-                    let message = interaction.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
-                    let categories = parse_games_list(&message.content).await;
-                    let games = categories.iter().flat_map(|category| category.games.iter()).collect::<Vec<&String>>();
+                let query = interaction.data.options[0].value.as_str().unwrap();
 
-                    let autocompolete_response = CreateAutocompleteResponse::new().set_choices(
-                        games.iter().map(|game| {
+                let autocompolete_response = CreateAutocompleteResponse::new().set_choices(
+                    games
+                        .iter()
+                        .filter(|game| game.to_lowercase().contains(&query.to_lowercase()))
+                        .map(|game| {
                             AutocompleteChoice::new(game.to_string(), game.to_string())
                         }).collect()
-                    );
+                );
 
-                    let _ = interaction.create_response(&ctx.http, serenity::builder::CreateInteractionResponse::Autocomplete(autocompolete_response)).await.unwrap();
-                },
-                _ => (),
+                let _ = interaction.create_response(&ctx.http, serenity::builder::CreateInteractionResponse::Autocomplete(autocompolete_response)).await.unwrap();
             };
         }
     }
@@ -147,7 +137,6 @@ impl EventHandler for Handler {
                 vec![
                     commands::add_game::register(),
                     commands::delete_game::register(),
-                    commands::copy_message::register(),
                 ]
             ).await.unwrap();
     }
