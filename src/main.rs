@@ -47,7 +47,7 @@ impl EventHandler for Handler {
                         println!("Cannot respond to slash command: {why}");
                     }
                 },
-                "add_game" => {
+                "add" => {
                     let mut message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
 
                     let utc_offset = FixedOffset::east_opt(3 * 3600); // UTC+3 offset in seconds
@@ -79,7 +79,7 @@ impl EventHandler for Handler {
                         println!("Cannot respond to slash command: {why}");
                     }
                 },
-                "delete_game" => {
+                "delete" => {
                     let mut message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
 
                     let mut categories = parse_games_list(&message.content).await;
