@@ -30,7 +30,7 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
             match command.data.name.as_str() {
-                "create_message" => {
+                "copy_message" => {
                     let message_id = command.data.options[0].value.as_str().unwrap().parse::<u64>().unwrap();
                     let message = command.channel_id.message(&ctx.http, message_id).await.unwrap();
 
