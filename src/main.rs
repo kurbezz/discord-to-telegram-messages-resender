@@ -1,10 +1,11 @@
 use reqwest::Url;
-use serenity::all::ActivityData;
+use serenity::all::{ActivityData, GuildId};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 
 pub mod config;
+pub mod commands;
 
 
 async fn send_to_telegram(msg: &str) {
@@ -13,7 +14,7 @@ async fn send_to_telegram(msg: &str) {
     let url = Url::parse_with_params(
         base_url.as_ref(),
         &[
-            ("chat_id", &config::CONFIG.telgram_channel_id.to_string().as_ref()),
+            ("chat_id", &config::CONFIG.telegram_channel_id.to_string().as_ref()),
             ("text", &msg)
         ]
     ).unwrap();
@@ -32,6 +33,18 @@ impl EventHandler for Handler {
         }
 
         send_to_telegram(&msg.content).await;
+    }
+
+    async fn ready(&self, ctx: Context, _ready: serenity::model::gateway::Ready) {
+        let guild_id = GuildId::new(config::CONFIG.discord_guild_id);
+
+        let _ = guild_id
+            .set_commands(
+                &ctx.http,
+                vec![
+                    commands::add_game::register(),
+                ]
+            ).await.unwrap();
     }
 }
 
