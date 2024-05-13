@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, CommandDataOption, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -32,7 +32,7 @@ struct Handler;
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
-            if command.channel_id != config::CONFIG.discord_channel_id {
+            if command.channel_id != config::CONFIG.discord_game_list_channel_id {
                 return;
             }
 
@@ -103,6 +103,9 @@ impl EventHandler for Handler {
             };
         } else if let Interaction::Autocomplete(interaction) = interaction {
             println!("Received autocomplete interaction: {interaction:#?}");
+
+            // let mut message = interaction.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+            // let mut categories = parse_games_list(&message.content).await;
 
             // let content = match interaction.data.name.as_str() {
             //     "game" => {
