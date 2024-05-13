@@ -16,6 +16,12 @@ pub fn register() -> CreateCommand {
         )
         .add_option(
             CreateCommandOption::new(
+                CommandOptionType::String, "customer", "Кто заказал"
+            )
+            .required(true)
+        )
+        .add_option(
+            CreateCommandOption::new(
                 CommandOptionType::String, "game", "Игра"
             )
             .required(true)
