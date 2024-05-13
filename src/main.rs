@@ -29,22 +29,39 @@ struct Handler;
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
-            println!("Received command interaction: {command:#?}");
+            match command.data.name.as_str() {
+                "create_message" => {
+                    let message_id = command.data.options[0].value.as_str().unwrap().parse::<u64>().unwrap();
+                    let message = command.channel_id.message(&ctx.http, message_id).await.unwrap();
 
-            let content = match command.data.name.as_str() {
-                "create_message" => Some("#init".to_string()),
-                _ => Some("not implemented :(".to_string()),
+                    let data = CreateInteractionResponseMessage::new().content(message.content);
+                    let builder = CreateInteractionResponse::Message(data);
+                    if let Err(why) = command.create_response(&ctx.http, builder).await {
+                        println!("Cannot respond to slash command: {why}");
+                    }
+                },
+                "add_game" => {
+                    // let message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+
+                    let data = CreateInteractionResponseMessage::new().content("Игра добавлена!").ephemeral(true);
+                    let builder = CreateInteractionResponse::Message(data);
+                    if let Err(why) = command.create_response(&ctx.http, builder).await {
+                        println!("Cannot respond to slash command: {why}");
+                    }
+                },
+                "delete_game" => {
+                    // let message = command.channel_id.message(&ctx.http, config::CONFIG.discord_game_list_message_id).await.unwrap();
+
+                    let data = CreateInteractionResponseMessage::new().content("Игра удалена!").ephemeral(true);
+                    let builder = CreateInteractionResponse::Message(data);
+                    if let Err(why) = command.create_response(&ctx.http, builder).await {
+                        println!("Cannot respond to slash command: {why}");
+                    }
+                },
+                _ => (),
             };
-
-            if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    println!("Cannot respond to slash command: {why}");
-                }
-            }
         } else if let Interaction::Autocomplete(interaction) = interaction {
-            // println!("Received autocomplete interaction: {interaction:#?}");
+            println!("Received autocomplete interaction: {interaction:#?}");
 
             // let content = match interaction.data.name.as_str() {
             //     "game" => {
@@ -96,7 +113,7 @@ impl EventHandler for Handler {
                 vec![
                     commands::add_game::register(),
                     commands::delete_game::register(),
-                    commands::create_message::register()
+                    commands::copy_message::register(),
                 ]
             ).await.unwrap();
     }
