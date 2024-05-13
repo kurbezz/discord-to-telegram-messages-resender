@@ -27,32 +27,13 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::Command(command) = interaction {
-            let content = match command.data.name.as_str() {
-                "add_game" => {
-                    commands::add_game::run(&ctx, &command).await.unwrap();
-                    None
-                },
-                _ => Some("not implemented :(".to_string()),
-            };
-
-            if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    println!("Cannot respond to slash command: {why}");
-                }
-            }
-        }
-    }
-
     async fn message(&self, _ctx: Context, msg: Message) {
-        if msg.channel_id != config::CONFIG.discord_channel_id {
+        if msg.channel_id == config::CONFIG.discord_channel_id {
+            send_to_telegram(&msg.content).await;
             return;
         }
 
-        send_to_telegram(&msg.content).await;
+        println!("{}: {}", msg.author.name, msg.content);
     }
 
     async fn ready(&self, ctx: Context, _ready: serenity::model::gateway::Ready) {
@@ -63,6 +44,7 @@ impl EventHandler for Handler {
                 &ctx.http,
                 vec![
                     commands::add_game::register(),
+                    // commands::delete_game::register(),
                 ]
             ).await.unwrap();
     }
