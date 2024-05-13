@@ -10,5 +10,6 @@ pub fn register() -> CreateCommand {
                 CommandOptionType::String, "game", "Игра"
             )
             .required(true)
+            .set_autocomplete(true)
         )
 }
