@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, GuildId, Interaction};
+use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;

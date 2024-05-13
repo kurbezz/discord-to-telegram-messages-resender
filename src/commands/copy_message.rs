@@ -6,7 +6,7 @@ pub fn register() -> CreateCommand {
         .description("Не вызывать, только для настройки")
         .add_option(
             CreateCommandOption::new(
-                CommandOptionType::Integer, "message_id", "ID сообщения"
+                CommandOptionType::String, "message_id", "ID сообщения"
             )
             .required(true)
         )
