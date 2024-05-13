@@ -1,5 +1,5 @@
 use reqwest::Url;
-use serenity::all::{ActivityData, GuildId};
+use serenity::all::{ActivityData, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -27,6 +27,26 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::Command(command) = interaction {
+            let content = match command.data.name.as_str() {
+                "add_game" => {
+                    commands::add_game::run(&ctx, &command).await.unwrap();
+                    None
+                },
+                _ => Some("not implemented :(".to_string()),
+            };
+
+            if let Some(content) = content {
+                let data = CreateInteractionResponseMessage::new().content(content);
+                let builder = CreateInteractionResponse::Message(data);
+                if let Err(why) = command.create_response(&ctx.http, builder).await {
+                    println!("Cannot respond to slash command: {why}");
+                }
+            }
+        }
+    }
+
     async fn message(&self, _ctx: Context, msg: Message) {
         if msg.channel_id != config::CONFIG.discord_channel_id {
             return;
